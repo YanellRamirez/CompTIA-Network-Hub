@@ -3291,9 +3291,19 @@ async function authSubmit() {
       currentUser = result.data.user;
       document.getElementById('userEmail').textContent = result.data.user.email;
       document.getElementById('userChip').style.display = 'flex';
-      await pullFromCloud();
+      // Boot immediately — don't wait for cloud pull
       document.getElementById('authOverlay').style.display = 'none';
       bootApp();
+      // Pull from cloud in background after app is visible
+      pullFromCloud().then(function() {
+        // Re-render with fresh cloud data if we got any
+        if (appBooted) {
+          renderSchedule();
+          renderDash();
+          renderScores();
+          updateStreak();
+        }
+      });
     } else {
       errEl.textContent = 'Sign in succeeded but no user returned. Please try again.';
     }
@@ -3381,13 +3391,21 @@ function bootApp() {
     // No session — show auth overlay, don't boot yet
     document.getElementById('authOverlay').style.display = 'flex';
   } else {
-    // Session exists — boot directly
+    // Session exists — boot directly without waiting for cloud pull
     currentUser = data.session.user;
     document.getElementById('userEmail').textContent = data.session.user.email;
     document.getElementById('userChip').style.display = 'flex';
-    await pullFromCloud();
     document.getElementById('authOverlay').style.display = 'none';
     bootApp();
+    // Pull in background
+    pullFromCloud().then(function() {
+      if (appBooted) {
+        renderSchedule();
+        renderDash();
+        renderScores();
+        updateStreak();
+      }
+    });
   }
 })();
 
