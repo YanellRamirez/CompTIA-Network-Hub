@@ -3266,16 +3266,17 @@ async function authSubmit() {
       result = await supa.auth.signInWithPassword({ email: email, password: password });
       if (result.error) throw result.error;
     }
-    // Reset button — onAuthStateChange will hide the overlay
+    // Don't wait for onAuthStateChange — boot directly from the result
     btn.textContent = authMode === 'register' ? 'Create Account' : 'Sign In';
     btn.disabled = false;
-    // Fallback: if onAuthStateChange doesn't fire within 4s, force boot
-    setTimeout(function() {
-      if (document.getElementById('authOverlay').style.display !== 'none') {
-        document.getElementById('authOverlay').style.display = 'none';
-        if (!appBooted) bootApp();
-      }
-    }, 4000);
+    if (result.data && result.data.user) {
+      currentUser = result.data.user;
+      document.getElementById('userEmail').textContent = result.data.user.email;
+      document.getElementById('userChip').style.display = 'flex';
+      await pullFromCloud();
+      document.getElementById('authOverlay').style.display = 'none';
+      bootApp();
+    }
   } catch(e) {
     errEl.textContent = e.message || 'Something went wrong. Try again.';
     btn.textContent = authMode === 'register' ? 'Create Account' : 'Sign In';
