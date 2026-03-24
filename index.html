@@ -223,25 +223,24 @@
     <span id="headerTimerSessions" style="display:none"></span>
   </div>
 
-  <!-- CENTER: Title -->
+  <!-- CENTER: Title + date + user chip -->
   <div style="text-align:center">
     <div class="header-title">CompTIA Network+ Hub</div>
     <div style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:3px;margin-top:4px;font-weight:700">N10-009</div>
     <div class="header-sub" id="todayDate" style="margin-top:3px"></div>
+    <!-- User chip sits right under the date, centered -->
+    <div id="userChip" style="display:none;align-items:center;justify-content:center;gap:7px;margin-top:6px;font-size:10px;font-family:var(--mono)">
+      <div id="syncDot"></div>
+      <span class="user-email" id="userEmail" style="color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      <button class="signout-btn" onclick="signOut()" style="color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:4px;transition:all .15s">Sign out</button>
+    </div>
   </div>
 
-  <!-- RIGHT: Countdown (restored) + User chip below -->
-  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-    <!-- Days to exam — back in its original place -->
-    <div class="countdown-chip">
-      <div class="days" id="daysLeft">--</div>
-      <div class="label">Days to Exam</div>
-    </div>
-    <!-- User chip — clean, minimal, tucked below countdown -->
-    <div id="userChip" style="display:none;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:10px;font-family:var(--mono)">
-      <div id="syncDot"></div>
-      <span class="user-email" id="userEmail" style="color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-      <button class="signout-btn" onclick="signOut()" style="color:var(--muted);cursor:pointer;background:none;border:none;font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:4px;transition:all .15s">↩ out</button>
+  <!-- RIGHT: Countdown — matches timer box exactly -->
+  <div style="display:flex;justify-content:flex-end">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:130px">
+      <div id="daysLeft" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);line-height:1;letter-spacing:2px">--</div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase">Days to Exam</div>
     </div>
   </div>
 </header>
