@@ -3287,24 +3287,33 @@ async function authSubmit() {
     if (w) w.style.display = 'none';
     btn.textContent = authMode === 'register' ? 'Create Account' : 'Sign In';
     btn.disabled = false;
+    console.log('Step 1: checking result.data', !!(result.data && result.data.user));
     if (result.data && result.data.user) {
+      console.log('Step 2: setting currentUser');
       currentUser = result.data.user;
+      console.log('Step 3: updating UI');
       document.getElementById('userEmail').textContent = result.data.user.email;
       document.getElementById('userChip').style.display = 'flex';
-      // Boot immediately — don't wait for cloud pull
+      console.log('Step 4: hiding overlay');
       document.getElementById('authOverlay').style.display = 'none';
+      console.log('Step 5: calling bootApp');
       bootApp();
-      // Pull from cloud in background after app is visible
-      pullFromCloud().then(function() {
-        // Re-render with fresh cloud data if we got any
-        if (appBooted) {
-          renderSchedule();
-          renderDash();
-          renderScores();
-          updateStreak();
-        }
-      });
+      console.log('Step 6: bootApp done');
+      // Pull from cloud in background — fire and forget
+      setTimeout(function() {
+        pullFromCloud().then(function() {
+          if (appBooted) {
+            renderSchedule();
+            renderDash();
+            renderScores();
+            updateStreak();
+          }
+        }).catch(function(e) {
+          console.warn('Background pull failed:', e.message);
+        });
+      }, 1000);
     } else {
+      console.log('No user in result:', JSON.stringify(result.data));
       errEl.textContent = 'Sign in succeeded but no user returned. Please try again.';
     }
   } catch(e) {
