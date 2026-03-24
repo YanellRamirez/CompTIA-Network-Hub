@@ -175,11 +175,22 @@
   #syncDot.error { background:var(--danger); }
 
   @media (max-width:700px) {
-    main { padding:16px; } header { padding:16px; }
+    main { padding:12px; }
+    header { padding:10px 12px; grid-template-columns:1fr auto; gap:10px; }
+    header > div:first-child { display:none; } /* hide timer on mobile */
+    header > div:nth-child(2) { text-align:left; }
+    header > div:last-child { align-items:flex-end; }
+    .header-title { font-size:16px; }
     .score-form { grid-template-columns:1fr 1fr; }
-    .score-entry { grid-template-columns:80px 1fr 60px auto; } .score-detail { display:none; }
+    .score-entry { grid-template-columns:70px 1fr 55px auto; } .score-detail { display:none; }
     .grid2, .grid3 { grid-template-columns:1fr; }
-    .day-row { grid-template-columns:70px 50px 1fr auto; }
+    .day-row { grid-template-columns:65px 44px 1fr auto; gap:8px; }
+    .tabs { padding:8px 12px 0; gap:2px; }
+    .tab { padding:6px 10px; font-size:9px; }
+    .card { padding:14px; }
+    .week-header { flex-wrap:wrap; gap:6px; }
+    .week-dates { margin-left:0 !important; }
+    #userChip { max-width:160px; }
   }
 </style>
 </head>
@@ -272,7 +283,7 @@
     <div class="card">
       <div class="card-title"><div class="dot" style="background:var(--accent3)"></div>Score Trend</div>
       <canvas id="scoreChart"></canvas>
-      <div id="dashScoreEmpty" style="color:var(--muted);font-size:12px;text-align:center;padding:30px 0;">No scores logged yet</div>
+      <div id="dashScoreEmpty" style="color:var(--muted);font-size:12px;text-align:center;padding:30px 0;display:flex;align-items:center;justify-content:center;height:120px">No scores logged yet</div>
     </div>
   </div>
   <div class="grid3">
@@ -364,9 +375,7 @@
           <option>Dion Practice Test 1</option><option>Dion Practice Test 2</option>
           <option>Dion Practice Test 3</option><option>Dion Practice Test 4</option>
           <option>Dion Practice Test 5</option><option>Dion Practice Test 6</option>
-          <option>Domain Quiz - Concepts</option><option>Domain Quiz - Implementation</option>
-          <option>Domain Quiz - Operations</option><option>Domain Quiz - Security</option>
-          <option>Domain Quiz - Troubleshooting</option><option>Other / Custom</option>
+          <option>Other / Custom</option>
         </select>
       </div>
       <div class="form-group">
@@ -808,11 +817,26 @@ let scores=S.get('scores')||[],checks=S.get('checks')||{},objChecks=S.get('obj')
 (function(){
   var ind=document.createElement('div');
   ind.id='saveIndicator';
-  ind.style.cssText='position:fixed;bottom:14px;right:16px;font-family:var(--mono);font-size:10px;color:var(--accent3);background:var(--surface2);border:1px solid rgba(16,185,129,.3);border-radius:6px;padding:4px 10px;opacity:0;transition:opacity .4s;z-index:9999;pointer-events:none';
-  ind.textContent='✓ Saved';
+  ind.style.cssText='position:fixed;bottom:14px;right:16px;font-family:var(--mono);font-size:10px;color:var(--accent3);background:var(--surface2);border:1px solid rgba(16,185,129,.3);border-radius:6px;padding:5px 12px;opacity:0;transition:opacity .4s;z-index:9999;pointer-events:none;display:flex;align-items:center;gap:6px';
+  ind.textContent='✓ Synced';
   document.body.appendChild(ind);
 })();
-function flashSaved(){var el=document.getElementById('saveIndicator');if(!el)return;el.style.opacity='1';clearTimeout(el._t);el._t=setTimeout(function(){el.style.opacity='0';},1400);}
+function flashSaved(){
+  var el=document.getElementById('saveIndicator');
+  if(!el)return;
+  var now=new Date();
+  var t=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+  el.textContent='✓ Synced at '+t;
+  el.style.opacity='1';
+  clearTimeout(el._t);
+  // Fade out after 3s but keep a subtle "last synced" in the sync dot title
+  el._t=setTimeout(function(){
+    el.style.opacity='0';
+    // After fade, show mini timestamp near sync dot
+    var dot=document.getElementById('syncDot');
+    if(dot) dot.title='Last synced: '+t;
+  },3000);
+}
 
 // S.set override handled in Supabase sync block above
 const EXAM=new Date('2026-05-02'), START=new Date('2026-03-23');
@@ -3371,11 +3395,14 @@ supa.auth.onAuthStateChange(async function(event, session) {
     // Show user chip
     document.getElementById('userEmail').textContent = session.user.email;
     document.getElementById('userChip').style.display = 'flex';
-    // Pull latest data from cloud
-    await pullFromCloud();
-    // Hide overlay and boot app
+    // Boot immediately, pull in background
     document.getElementById('authOverlay').style.display = 'none';
     bootApp();
+    setTimeout(function() {
+      pullFromCloud().then(function() {
+        if (appBooted) { renderSchedule(); renderDash(); renderScores(); updateStreak(); }
+      }).catch(function(e) { console.warn('bg pull failed:', e.message); });
+    }, 1000);
   } else {
     currentUser = null;
     document.getElementById('userChip').style.display = 'none';
