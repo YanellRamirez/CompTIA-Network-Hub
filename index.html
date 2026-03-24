@@ -744,28 +744,34 @@ async function pullFromCloud() {
   if (!currentUser) return;
   setSyncDot('syncing');
   try {
-    var { data, error } = await supa.from('user_progress').select('*').eq('user_id', currentUser.id).single();
-    if (error && error.code !== 'PGRST116') throw error;
+    console.log('Pulling from cloud for user:', currentUser.id);
+    var { data, error } = await supa
+      .from('user_progress')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .maybeSingle(); // maybeSingle returns null instead of error when no row found
+    console.log('Pull result — data:', data ? 'found' : 'null', 'error:', error ? error.message : 'none');
+    if (error) throw error;
     if (data) {
       checks = data.checks || {};
       objChecks = data.obj_checks || {};
       scores = data.scores || [];
       quizHistory = data.quiz_history || [];
       fcConf = data.fc_conf || {};
-      // Mirror to localStorage for offline fallback
       S.set('checks', checks);
       S.set('obj', objChecks);
       S.set('scores', scores);
       S.set('quizHistory', quizHistory);
       S.set('fcConf', fcConf);
       if (data.active_tab) S.set('activeTab', data.active_tab);
+    } else {
+      console.log('No cloud data yet — fresh user, starting with local state');
     }
     setSyncDot('');
-    console.log('Pulled from cloud:', data ? 'data found' : 'no data yet');
   } catch(e) {
+    console.warn('Pull failed:', e.message, e);
     setSyncDot('error');
-    console.warn('Pull failed:', e.message);
-    // Fall back to localStorage silently
+    // Don't block boot — just continue with local state
   }
 }
 
