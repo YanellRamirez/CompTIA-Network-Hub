@@ -192,6 +192,7 @@
     <div class="auth-logo">CompTIA Network+</div>
     <div class="auth-title">Welcome Back</div>
     <div class="auth-sub" id="authSubtitle">Sign in to sync your progress across all devices</div>
+    <div id="authWaking" style="display:none;font-size:11px;font-family:var(--mono);color:var(--warn);text-align:center;margin-bottom:8px">⏳ Waking up server... this takes ~15s on first load</div>
     <div class="auth-err" id="authErr"></div>
     <input class="auth-input" type="email" id="authEmail" placeholder="Email address" autocomplete="email"/>
     <input class="auth-input" type="password" id="authPassword" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')authSubmit()"/>
@@ -3251,6 +3252,12 @@ async function authSubmit() {
   btn.textContent = 'Please wait...';
   btn.disabled = true;
 
+  // Show waking message after 3s in case server is cold-starting
+  var wakingTimer = setTimeout(function() {
+    var w = document.getElementById('authWaking');
+    if (w) w.style.display = 'block';
+  }, 3000);
+
   try {
     var result;
     console.log('Auth: attempting', authMode, 'for', email);
@@ -3269,6 +3276,9 @@ async function authSubmit() {
       console.log('SignIn result:', JSON.stringify(result.error || 'ok'), 'user:', result.data && result.data.user ? result.data.user.email : 'none');
       if (result.error) throw result.error;
     }
+    clearTimeout(wakingTimer);
+    var w = document.getElementById('authWaking');
+    if (w) w.style.display = 'none';
     btn.textContent = authMode === 'register' ? 'Create Account' : 'Sign In';
     btn.disabled = false;
     if (result.data && result.data.user) {
@@ -3282,6 +3292,9 @@ async function authSubmit() {
       errEl.textContent = 'Sign in succeeded but no user returned. Please try again.';
     }
   } catch(e) {
+    clearTimeout(wakingTimer);
+    var w = document.getElementById('authWaking');
+    if (w) w.style.display = 'none';
     console.error('Auth error:', e.message, e);
     errEl.textContent = e.message || 'Something went wrong. Try again.';
     btn.textContent = authMode === 'register' ? 'Create Account' : 'Sign In';
@@ -3355,12 +3368,21 @@ function bootApp() {
 
 // ── CHECK FOR EXISTING SESSION ON LOAD ────────────────────────
 (async function() {
+  // Ping Supabase to wake up the free-tier server before user tries to sign in
+  try { await supa.from('user_progress').select('id').limit(1); } catch(e) {}
   var { data } = await supa.auth.getSession();
   if (!data.session) {
     // No session — show auth overlay, don't boot yet
     document.getElementById('authOverlay').style.display = 'flex';
+  } else {
+    // Session exists — boot directly
+    currentUser = data.session.user;
+    document.getElementById('userEmail').textContent = data.session.user.email;
+    document.getElementById('userChip').style.display = 'flex';
+    await pullFromCloud();
+    document.getElementById('authOverlay').style.display = 'none';
+    bootApp();
   }
-  // If session exists, onAuthStateChange fires automatically and boots the app
 })();
 
 </script>
