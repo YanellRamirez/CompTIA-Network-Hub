@@ -743,14 +743,19 @@ async function pushToCloud() {
 async function pullFromCloud() {
   if (!currentUser) return;
   setSyncDot('syncing');
+  // Hard 8-second timeout — never hang
+  var timeoutPromise = new Promise(function(_, reject) {
+    setTimeout(function() { reject(new Error('Pull timeout')); }, 8000);
+  });
+  var fetchPromise = supa
+    .from('user_progress')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
   try {
-    console.log('Pulling from cloud for user:', currentUser.id);
-    var { data, error } = await supa
-      .from('user_progress')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .maybeSingle(); // maybeSingle returns null instead of error when no row found
-    console.log('Pull result — data:', data ? 'found' : 'null', 'error:', error ? error.message : 'none');
+    var result = await Promise.race([fetchPromise, timeoutPromise]);
+    var data = result.data, error = result.error;
+    console.log('Pull result:', data ? 'data found' : 'no data', error ? error.message : '');
     if (error) throw error;
     if (data) {
       checks = data.checks || {};
@@ -764,14 +769,11 @@ async function pullFromCloud() {
       S.set('quizHistory', quizHistory);
       S.set('fcConf', fcConf);
       if (data.active_tab) S.set('activeTab', data.active_tab);
-    } else {
-      console.log('No cloud data yet — fresh user, starting with local state');
     }
     setSyncDot('');
   } catch(e) {
-    console.warn('Pull failed:', e.message, e);
+    console.warn('Pull failed/timed out:', e.message);
     setSyncDot('error');
-    // Don't block boot — just continue with local state
   }
 }
 
@@ -3393,28 +3395,25 @@ function bootApp() {
 
 // ── CHECK FOR EXISTING SESSION ON LOAD ────────────────────────
 (async function() {
-  // Ping Supabase to wake up the free-tier server before user tries to sign in
-  try { await supa.from('user_progress').select('id').limit(1); } catch(e) {}
-  var { data } = await supa.auth.getSession();
-  if (!data.session) {
-    // No session — show auth overlay, don't boot yet
+  try {
+    var { data } = await supa.auth.getSession();
+    if (!data || !data.session) {
+      document.getElementById('authOverlay').style.display = 'flex';
+    } else {
+      currentUser = data.session.user;
+      document.getElementById('userEmail').textContent = data.session.user.email;
+      document.getElementById('userChip').style.display = 'flex';
+      document.getElementById('authOverlay').style.display = 'none';
+      bootApp();
+      setTimeout(function() {
+        pullFromCloud().then(function() {
+          if (appBooted) { renderSchedule(); renderDash(); renderScores(); updateStreak(); }
+        }).catch(function(e) { console.warn('bg pull failed:', e.message); });
+      }, 2000);
+    }
+  } catch(e) {
+    console.warn('Session check failed:', e.message);
     document.getElementById('authOverlay').style.display = 'flex';
-  } else {
-    // Session exists — boot directly without waiting for cloud pull
-    currentUser = data.session.user;
-    document.getElementById('userEmail').textContent = data.session.user.email;
-    document.getElementById('userChip').style.display = 'flex';
-    document.getElementById('authOverlay').style.display = 'none';
-    bootApp();
-    // Pull in background
-    pullFromCloud().then(function() {
-      if (appBooted) {
-        renderSchedule();
-        renderDash();
-        renderScores();
-        updateStreak();
-      }
-    });
   }
 })();
 
