@@ -275,15 +275,15 @@
 
 <!-- DASHBOARD -->
 <div class="panel active" id="panel-dashboard">
-  <div class="grid2" style="margin-bottom:16px">
+  <div class="grid2" style="margin-bottom:16px;align-items:stretch">
     <div class="card">
       <div class="card-title"><div class="dot"></div>Exam Domains</div>
       <div id="domainRows"></div>
     </div>
-    <div class="card">
+    <div class="card" style="display:flex;flex-direction:column">
       <div class="card-title"><div class="dot" style="background:var(--accent3)"></div>Score Trend</div>
-      <canvas id="scoreChart" style="display:none"></canvas>
-      <div id="dashScoreEmpty" style="color:var(--muted);font-size:13px;text-align:center;padding:24px;display:flex;align-items:center;justify-content:center;min-height:100px">No scores logged yet</div>
+      <canvas id="scoreChart" style="display:none;flex:1"></canvas>
+      <div id="dashScoreEmpty" style="color:var(--muted);font-size:13px;flex:1;display:flex;align-items:center;justify-content:center">No scores logged yet</div>
     </div>
   </div>
   <div class="grid3">
