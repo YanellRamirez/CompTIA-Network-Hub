@@ -282,8 +282,8 @@
     </div>
     <div class="card">
       <div class="card-title"><div class="dot" style="background:var(--accent3)"></div>Score Trend</div>
-      <canvas id="scoreChart"></canvas>
-      <div id="dashScoreEmpty" style="color:var(--muted);font-size:12px;text-align:center;padding:30px 0;display:flex;align-items:center;justify-content:center;height:120px">No scores logged yet</div>
+      <canvas id="scoreChart" style="display:none"></canvas>
+      <div id="dashScoreEmpty" style="color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:center;height:140px;width:100%">No scores logged yet</div>
     </div>
   </div>
   <div class="grid3">
@@ -1043,7 +1043,7 @@ function renderDash(){
 }
 
 function drawChart(){
-  const cv=document.getElementById('scoreChart'),em=document.getElementById('dashScoreEmpty');
+  const cv=document.getElementById('scoreChart'),em=document.getElementById('dashScoreEmpty'); cv.style.display=''; em.style.display='none';
   if(!scores.length){cv.style.display='none';em.style.display='block';return;}
   cv.style.display='block';em.style.display='none';
   const ctx=cv.getContext('2d'),W=cv.offsetWidth||400,H=120,pad=20;
