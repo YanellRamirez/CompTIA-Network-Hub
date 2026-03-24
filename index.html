@@ -3253,8 +3253,10 @@ async function authSubmit() {
 
   try {
     var result;
+    console.log('Auth: attempting', authMode, 'for', email);
     if (authMode === 'register') {
       result = await supa.auth.signUp({ email: email, password: password });
+      console.log('SignUp result:', JSON.stringify(result.error || 'ok'));
       if (result.error) throw result.error;
       if (result.data.user && !result.data.session) {
         msgEl.textContent = 'Check your email to confirm your account, then sign in.';
@@ -3264,9 +3266,9 @@ async function authSubmit() {
       }
     } else {
       result = await supa.auth.signInWithPassword({ email: email, password: password });
+      console.log('SignIn result:', JSON.stringify(result.error || 'ok'), 'user:', result.data && result.data.user ? result.data.user.email : 'none');
       if (result.error) throw result.error;
     }
-    // Don't wait for onAuthStateChange — boot directly from the result
     btn.textContent = authMode === 'register' ? 'Create Account' : 'Sign In';
     btn.disabled = false;
     if (result.data && result.data.user) {
@@ -3276,8 +3278,11 @@ async function authSubmit() {
       await pullFromCloud();
       document.getElementById('authOverlay').style.display = 'none';
       bootApp();
+    } else {
+      errEl.textContent = 'Sign in succeeded but no user returned. Please try again.';
     }
   } catch(e) {
+    console.error('Auth error:', e.message, e);
     errEl.textContent = e.message || 'Something went wrong. Try again.';
     btn.textContent = authMode === 'register' ? 'Create Account' : 'Sign In';
     btn.disabled = false;
