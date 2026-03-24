@@ -204,7 +204,7 @@
 </div>
 
 <header>
-  <!-- LEFT: Timer (compact) -->
+  <!-- LEFT: Timer -->
   <div style="display:flex;align-items:center">
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:130px">
       <div id="headerTimerDisplay" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);line-height:1;letter-spacing:2px">25:00</div>
@@ -222,22 +222,26 @@
     </div>
     <span id="headerTimerSessions" style="display:none"></span>
   </div>
+
   <!-- CENTER: Title -->
   <div style="text-align:center">
     <div class="header-title">CompTIA Network+ Hub</div>
     <div style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:3px;margin-top:4px;font-weight:700">N10-009</div>
     <div class="header-sub" id="todayDate" style="margin-top:3px"></div>
   </div>
-  <!-- RIGHT: User chip + Countdown -->
-  <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-direction:column">
-    <div id="userChip" style="display:none">
-      <div id="syncDot"></div>
-      <span class="user-email" id="userEmail"></span>
-      <button class="signout-btn" onclick="signOut()">Sign out</button>
-    </div>
-    <div class="countdown-chip" style="min-width:130px;padding:8px 14px">
-      <div class="days" id="daysLeft" style="font-size:22px">--</div>
+
+  <!-- RIGHT: Countdown (restored) + User chip below -->
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+    <!-- Days to exam — back in its original place -->
+    <div class="countdown-chip">
+      <div class="days" id="daysLeft">--</div>
       <div class="label">Days to Exam</div>
+    </div>
+    <!-- User chip — clean, minimal, tucked below countdown -->
+    <div id="userChip" style="display:none;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:10px;font-family:var(--mono)">
+      <div id="syncDot"></div>
+      <span class="user-email" id="userEmail" style="color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      <button class="signout-btn" onclick="signOut()" style="color:var(--muted);cursor:pointer;background:none;border:none;font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:4px;transition:all .15s">↩ out</button>
     </div>
   </div>
 </header>
@@ -725,7 +729,8 @@ async function pushToCloud() {
       fc_conf: fcConf || {},
       drill_stats: {
         ports_best: (typeof portState !== 'undefined') ? portState.bestStreak : 0,
-        acr_best: (typeof acrState !== 'undefined') ? acrState.bestStreak : 0
+        acr_best: (typeof acrState !== 'undefined') ? acrState.bestStreak : 0,
+        osi_best: (typeof osiState !== 'undefined') ? osiState.bestStreak : 0
       },
       active_tab: S.get('activeTab') || 'dashboard',
       updated_at: new Date().toISOString()
@@ -769,6 +774,17 @@ async function pullFromCloud() {
       S.set('quizHistory', quizHistory);
       S.set('fcConf', fcConf);
       if (data.active_tab) S.set('activeTab', data.active_tab);
+      // Restore drill best streaks
+      if (data.drill_stats) {
+        if (data.drill_stats.ports_best && typeof portState !== 'undefined') {
+          portState.bestStreak = data.drill_stats.ports_best;
+          S.set('drillStats_ports', {bestStreak: portState.bestStreak});
+        }
+        if (data.drill_stats.acr_best && typeof acrState !== 'undefined') {
+          acrState.bestStreak = data.drill_stats.acr_best;
+          S.set('drillStats_acronym', {bestStreak: acrState.bestStreak});
+        }
+      }
     }
     setSyncDot('');
   } catch(e) {
